@@ -34,6 +34,8 @@ export function useAuthActions() {
   return useContext(ConvexAuthActionsContext);
 }
 
+export { useAuth as useConvexAuth } from "./client.js";
+
 /**
  * Replace your `ConvexProvider` with this component to enable authentication.
  *
