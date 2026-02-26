@@ -4,11 +4,10 @@ import { SignJWT, importPKCS8 } from "jose";
 import { requireEnv } from "../utils.js";
 import { TOKEN_SUB_CLAIM_DIVIDER } from "./utils.js";
 import { MutationCtx } from "./types.js";
-import { LOG_LEVELS, logWithLevel } from "./utils.js";
 
 const DEFAULT_JWT_DURATION_MS = 1000 * 60 * 60; // 1 hour
 
-const RESERVED_CLAIMS = new Set(["sub", "iss", "aud", "iat", "exp"]);
+const RESERVED_CLAIMS = new Set(["sub", "iss", "aud", "iat", "exp", "nbf", "jti"]);
 
 export async function generateToken(
   ctx: MutationCtx,
@@ -38,6 +37,7 @@ export async function generateToken(
   }
 
   return await new SignJWT({
+    ...extraClaims,
     sub: args.userId + TOKEN_SUB_CLAIM_DIVIDER + args.sessionId,
     ...extraClaims,
   })

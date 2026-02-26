@@ -367,9 +367,11 @@ export function AuthProvider({
           : null;
       // code from URL is only consumed initially,
       // ref avoids racing in Strict mode
-      if (
-        (signingInWithCodeFromURL.current || code) &&
-        !signingInWithCodeFromURL.current &&
+      if (signingInWithCodeFromURL.current) {
+        // Sign-in from URL code is already in progress, do nothing.
+        // Reading from storage would set isLoading to false prematurely.
+      } else if (
+        code &&
         (shouldHandleCode === undefined ||
           (typeof shouldHandleCode === "function"
             ? shouldHandleCode()
@@ -554,6 +556,7 @@ function browserAddEventListener<K extends keyof WindowEventMap>(
   listener: (this: Window, ev: WindowEventMap[K]) => any,
   options?: boolean | AddEventListenerOptions,
 ): void {
+  if (typeof window === "undefined") return;
   window.addEventListener?.(type, listener, options);
 }
 
@@ -562,5 +565,6 @@ function browserRemoveEventListener<K extends keyof WindowEventMap>(
   listener: (this: Window, ev: WindowEventMap[K]) => any,
   options?: boolean | EventListenerOptions,
 ): void {
+  if (typeof window === "undefined") return;
   window.removeEventListener?.(type, listener, options);
 }

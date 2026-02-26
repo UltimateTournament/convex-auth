@@ -13,7 +13,7 @@ import {
   GenericMutationCtx,
   GenericQueryCtx,
 } from "convex/server";
-import { GenericId, Value } from "convex/values";
+import { GenericId, JSONValue, Value } from "convex/values";
 import { ConvexCredentialsUserConfig } from "../providers/ConvexCredentials.js";
 import { GenericDoc } from "./convex_types.js";
 
@@ -68,8 +68,8 @@ export type ConvexAuthConfig = {
      * standard `sub` claim. The claims will be available on the
      * `UserIdentity` returned by `ctx.auth.getUserIdentity()`.
      *
-     * Reserved claim names (`sub`, `iss`, `aud`, `iat`, `exp`) should not
-     * be returned, and will be stripped if returned.
+     * Reserved claim names (`sub`, `iss`, `aud`, `iat`, `exp`, `nbf`, `jti`)
+     * must not be returned — an error will be thrown if they are.
      *
      * ```ts
      * export const { auth, signIn, signOut, store } = convexAuth({
@@ -89,7 +89,7 @@ export type ConvexAuthConfig = {
         userId: GenericId<"users">;
         sessionId: GenericId<"authSessions">;
       },
-    ) => Promise<Record<string, unknown>>;
+    ) => Promise<Record<string, JSONValue | undefined>>;
   };
   /**
    * Sign-in configuration.
@@ -196,6 +196,36 @@ export type ConvexAuthConfig = {
         shouldLink?: boolean;
       },
     ) => Promise<GenericId<"users">>;
+    /**
+     * Called before a new session is created for a user.
+     *
+     * This callback runs during every sign-in flow
+     * (credentials, OAuth, email, phone) right before the session
+     * is persisted. Throw an error to reject the sign-in.
+     *
+     * This is useful for checking whether a user is banned or
+     * otherwise disallowed from signing in:
+     *
+     * ```ts
+     * callbacks: {
+     *   async beforeSessionCreation(ctx, { userId }) {
+     *     const user = await ctx.db.get(userId);
+     *     if (user?.banned) {
+     *       throw new Error("Account is banned");
+     *     }
+     *   },
+     * }
+     * ```
+     */
+    beforeSessionCreation?: (
+      ctx: GenericMutationCtx<AnyDataModel>,
+      args: {
+        /**
+         * The ID of the user about to be signed in.
+         */
+        userId: GenericId<"users">;
+      },
+    ) => Promise<void>;
     /**
      * Perform additional writes after a user is created.
      *
